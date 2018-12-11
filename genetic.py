@@ -2,12 +2,13 @@ import numpy as np
 import random
 import TSPClasses
 import time
+import TSPSolver
 
 '''Hyperparameters'''
 max_unchanged_generations = 50
 population_size = 50
-mutation_rate = 10 # percent chance each gene will mutate
-elite_size = 10
+mutation_rate = 30 # percent chance each gene will mutate
+elite_size = 5
 '''Hyperparameters'''
 print_info = True
 
@@ -55,21 +56,13 @@ def crossover(x, y):
 
 
 class Population:
-    def __init__(self, initial_solution):
-        self.fittest = Individual(initial_solution)
+    def __init__(self, initial_solutions):
         self.gen_count = 0
-        self.generation = np.empty(population_size)
-        self._init_population()
-
-    def _init_population(self):
-        new_generation = []
-        pioneer = self.fittest
-        for _ in range(0, population_size):
-            offspring = pioneer.mutate()
-            new_generation.append(offspring)
-            if offspring.get_fitness() > self.fittest.get_fitness():
-                self.fittest = offspring
-        self.generation = new_generation
+        self.generation = []
+        for s in initial_solutions:
+            self.generation.append(Individual(s))
+        self.generation.sort(key=lambda i: i.cost)
+        self.fittest = self.generation[0]
 
     def evolve(self):
         self.mutate_population()
@@ -79,8 +72,9 @@ class Population:
         self.gen_count += 1
 
         if print_info:
-            print("Generation " + str(self.gen_count))
-            print(" Fittest: " + str(self.fittest.cost))
+            # print("Generation " + str(self.gen_count))
+            # print(" Fittest: " + str(self.fittest.cost))
+            pass
 
     def breed_population(self):
         for i in range(elite_size, population_size - 1):
@@ -88,12 +82,14 @@ class Population:
             offspring = crossover(self.generation[i], elite)
             if offspring.get_fitness() > self.generation[population_size - i - 1].get_fitness():
                 self.generation[population_size - i - 1] = offspring
+                print("mated!")
 
     def mutate_population(self):
         for i in range(0, population_size - 1):
             offspring = self.generation[i].mutate()
-            if offspring.get_fitness() > self.generation[i].get_fitness():
+            if True:#offspring.get_fitness() > self.generation[i].get_fitness():
                 self.generation[i] = offspring
+                print("mutated")
 
 
 class Individual:

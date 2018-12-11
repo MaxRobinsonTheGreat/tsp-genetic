@@ -190,21 +190,16 @@ class TSPSolver:
     '''
 
     def fancy(self, time_allowance=60.0):
-        results = self.defaultRandomTour()
-        initial = results['soln'].route
-        print(results['soln'].cost)
+        solutions = []
+        for _ in range(genetic.population_size):
+            results = self.greedy(time_allowance)
+            solutions.append(results['soln'].route)
 
         time_started = time.time()
-        solution = genetic.solve(initial, time_allowance)
+        solution = genetic.solve(solutions, time_allowance)
 
-        results['cost'] = solution.cost
-        results['time'] = time.time() - time_started
-        results['count'] = None
-        results['soln'] = solution
-        results['max'] = None
-        results['total'] = None
-        results['pruned'] = None
-        return results
+        return {'cost': solution.cost, 'time': time.time() - time_started, 'count': None, 'soln': solution,
+                'max': None, 'total': None, 'pruned': None}
 
 
 def init_root(root, cities):
