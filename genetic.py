@@ -89,13 +89,15 @@ class Population:
             offspring = crossover(self.generation[i], other)
             if offspring.get_fitness() > self.generation[i].get_fitness():
                 self.generation[i] = offspring
+                print("mated")
 
     # Go through each member of the non-elite and mutate their route. If the change is not favorable, discard.
     def mutate_population(self):
         for i in range(elite_size, population_size - 1):
             offspring = self.generation[i].mutate()
-            if True: #offspring.get_fitness() > self.generation[i].get_fitness():
+            if offspring.get_fitness() > self.generation[i].get_fitness():
                 self.generation[i] = offspring
+                print("mutated")
 
 
 class Individual:

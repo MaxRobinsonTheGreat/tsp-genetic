@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 from which_pyqt import PYQT_VER
+
 if PYQT_VER == 'PYQT5':
     from PyQt5.QtCore import QLineF, QPointF
 elif PYQT_VER == 'PYQT4':
@@ -77,8 +78,7 @@ class TSPSolver:
     '''
 
     def greedy(self, time_allowance=60.0):
-        cities = self._scenario.getCities()
-        random.shuffle(cities)
+        cities = set(self._scenario.getCities())
         bssf: TSPSolution = None
         count = 0
         start_time = time.time()
@@ -109,6 +109,26 @@ class TSPSolver:
         end_time = time.time()
         return {'cost': bssf.cost, 'time': end_time - start_time, 'count': count, 'soln': bssf,
                 'max': None, 'total': None, 'pruned': None}
+
+    def calc_greedy(self, city):
+        other_cities = set(self._scenario.getCities())
+        other_cities.remove(city)
+        route = [city]
+
+        while other_cities:
+            last_city = route[-1]
+            closest = min(other_cities, key=lambda c: last_city.costTo(c))
+            route.append(closest)
+            other_cities.remove(closest)
+
+            # check if we hit a dead end
+            if last_city.costTo(closest) == math.inf:
+                break
+        greedy_solution = TSPSolution(route)
+        return greedy_solution
+        # # if not a possible path, don't count it
+        # if greedy_solution.cost == math.inf:
+        #     count -= 1
 
     ''' <summary>
         This is the entry point for the branch-and-bound algorithm that you will implement
@@ -178,8 +198,6 @@ class TSPSolver:
         results['pruned'] = pruned
         return results
 
-
-
     ''' <summary>
         This is the entry point for the algorithm you'll write for your group project.
         </summary>
@@ -192,11 +210,19 @@ class TSPSolver:
     def fancy(self, time_allowance=60.0):
         time_started = time.time()
         solutions = []
+        cities = self._scenario.getCities()
+        routes = []
+        for city in cities:
+            routes.append(self.calc_greedy(city))
+
+        if genetic.population_size > len(cities):
+            genetic.population_size = len(cities)
+
+        routes.sort(key=lambda route: route.cost)
         for i in range(genetic.population_size):
-            results = self.greedy(time_allowance)
-            solutions.append(results['soln'].route)
+            solutions.append(routes[i].route)
             if genetic.print_info:
-                print("Solution "+str(i)+" added")
+                print("Solution " + str(i) + " added")
             if time.time() - time_started > time_allowance:
                 break
 
@@ -207,7 +233,7 @@ class TSPSolver:
 
 
 def init_root(root, cities):
-    matrix_size = len(root.cities)+1
+    matrix_size = len(root.cities) + 1
     root.matrix = np.empty([matrix_size, matrix_size])
     for city in cities:
         for next_city in cities:
