@@ -2,24 +2,23 @@ import numpy as np
 import random
 import TSPClasses
 import time
-import TSPSolver
 
 '''Hyperparameters'''
 max_unchanged_generations = 50
 population_size = 50
-mutation_rate = 30 # percent chance each gene will mutate
-elite_size = 5
+mutation_rate = 20 # percent chance each gene will mutate
+elite_size = 10
 '''Hyperparameters'''
 print_info = True
 
 
-def solve(initial_solution, max_time):
+def solve(initial_solution, max_time, time_started):
     population = Population(initial_solution)
     initial_cost = population.fittest.cost
 
     changes = 0
-    start_time = time.time()
-    while changes <= max_unchanged_generations and time.time() - start_time < max_time:
+    # Keep going until enough generations have passed with no changes OR if we've taken too long
+    while changes <= max_unchanged_generations and time.time() - time_started < max_time:
         prev_fitness = population.fittest.get_fitness()
         population.evolve()
         if population.fittest.get_fitness() == prev_fitness:
@@ -33,6 +32,8 @@ def solve(initial_solution, max_time):
     return population.fittest.solution
 
 
+'''Select the a subsection of the first parent x. Add it to the child. Add every city that is not already in the child
+   to the child in the order that they're found in y '''
 def crossover(x, y):
     route = []
 
@@ -65,31 +66,36 @@ class Population:
         self.fittest = self.generation[0]
 
     def evolve(self):
-        self.mutate_population()
-        self.breed_population()
-        self.generation.sort(key=lambda i: i.cost)
-        self.fittest = self.generation[0]
+        self.mutate_population() # Get any useful mutations
+        self.breed_population() # Get any useful recombinations
+        self.generation.sort(key=lambda i: i.cost) # Sort the list with the most fit first
+        self.fittest = self.generation[0] # Get the best guy
         self.gen_count += 1
 
         if print_info:
-            # print("Generation " + str(self.gen_count))
-            # print(" Fittest: " + str(self.fittest.cost))
+            print("Generation " + str(self.gen_count))
+            print(" Fittest: " + str(self.fittest.cost))
             pass
 
+    # Run crossover on each member of the population. There's a 50% chance to breed with a member of the elite, and a
+    # 50% chance to breed with a random population member. If the offspring is less fit, discard it
     def breed_population(self):
-        for i in range(elite_size, population_size - 1):
-            elite = self.generation[random.randint(0, elite_size - 1)]
-            offspring = crossover(self.generation[i], elite)
-            if offspring.get_fitness() > self.generation[population_size - i - 1].get_fitness():
-                self.generation[population_size - i - 1] = offspring
-                print("mated!")
-
-    def mutate_population(self):
         for i in range(0, population_size - 1):
-            offspring = self.generation[i].mutate()
-            if True:#offspring.get_fitness() > self.generation[i].get_fitness():
+            if random.randint(1, 2) == 1:
+                breed_index = random.randint(0, population_size-1)
+            else:
+                breed_index = random.randint(0, elite_size)
+            other = self.generation[breed_index]
+            offspring = crossover(self.generation[i], other)
+            if offspring.get_fitness() > self.generation[i].get_fitness():
                 self.generation[i] = offspring
-                print("mutated")
+
+    # Go through each member of the non-elite and mutate their route. If the change is not favorable, discard.
+    def mutate_population(self):
+        for i in range(elite_size, population_size - 1):
+            offspring = self.generation[i].mutate()
+            if True: #offspring.get_fitness() > self.generation[i].get_fitness():
+                self.generation[i] = offspring
 
 
 class Individual:
@@ -98,6 +104,8 @@ class Individual:
         self.solution = TSPClasses.TSPSolution(cities)
         self.cost = self.solution.cost
 
+    # Go through each city in the route and swap it with a random other city. This has a certain percent chance to
+    # occur for each city
     def mutate(self):
         new_solution = np.array(self.cities)
         for swap in range(len(new_solution)):

@@ -77,10 +77,10 @@ class TSPSolver:
     '''
 
     def greedy(self, time_allowance=60.0):
-        cities = set(self._scenario.getCities())
+        cities = self._scenario.getCities()
+        random.shuffle(cities)
         bssf: TSPSolution = None
         count = 0
-
         start_time = time.time()
         for city in cities:
             if time.time() - start_time > time_allowance:
@@ -190,13 +190,17 @@ class TSPSolver:
     '''
 
     def fancy(self, time_allowance=60.0):
+        time_started = time.time()
         solutions = []
-        for _ in range(genetic.population_size):
+        for i in range(genetic.population_size):
             results = self.greedy(time_allowance)
             solutions.append(results['soln'].route)
+            if genetic.print_info:
+                print("Solution "+str(i)+" added")
+            if time.time() - time_started > time_allowance:
+                break
 
-        time_started = time.time()
-        solution = genetic.solve(solutions, time_allowance)
+        solution = genetic.solve(solutions, time_allowance, time_started)
 
         return {'cost': solution.cost, 'time': time.time() - time_started, 'count': None, 'soln': solution,
                 'max': None, 'total': None, 'pruned': None}
